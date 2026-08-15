@@ -78,7 +78,7 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	for _, nscSyncronizer := range nscSynchronizerList.Items {
-		err := r.updateSynchronizerIfNeeded(ctx, nscSyncronizer)
+		err := r.updateSynchronizer(ctx, nscSyncronizer)
 		if err != nil {
 			log.Error(err, "unable to update syncronizer for specific crd")
 			// TODO - Add extra though on how to solve when this happens for a single CRD.
@@ -89,7 +89,7 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func (r *NamespaceClassReconciler) updateSynchronizerIfNeeded(
+func (r *NamespaceClassReconciler) updateSynchronizer(
 	ctx context.Context,
 	nscSyncronizer namespaceextenitionv1.NamespaceClassSynchronizer,
 ) error {
