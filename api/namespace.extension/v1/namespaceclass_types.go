@@ -29,7 +29,7 @@ import (
 // NamespaceClassSpec defines the desired state of NamespaceClass
 type NamespaceClassSpec struct {
 	// +optional
-	NetworkPolicys []NetworkPoliciyTemplate `json:"networkPolicys,omitempty"`
+	NetworkPolicies []NetworkPoliciyTemplate `json:"networkPolicies,omitempty"`
 	// +optional
 	ConfigMaps []ConfigMapTemplate `json:"configMaps,omitempty"`
 	// +optional
@@ -38,7 +38,7 @@ type NamespaceClassSpec struct {
 	// +optional
 	// AnyApproach is the generic implementation that I disagree on.
 	// Just adding the example. If this was a real case I would defend this to not be taken.
-	AnyApproach []TargetResource `json:"anyApproach"`
+	AnyApproach []TargetResource `json:"anyApproach,omitempty"`
 }
 
 // TargetResource Is how I would implement the generic implementation suggested on the code

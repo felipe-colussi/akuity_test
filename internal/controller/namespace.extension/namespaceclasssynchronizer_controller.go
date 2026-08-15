@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	namespaceextenitionv1 "akuity/api/namespace.extenition/v1"
+	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
 	"akuity/internal/constants"
 
 	corev1 "k8s.io/api/core/v1"
@@ -48,10 +48,10 @@ type NamespaceClassSynchronizerReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasssynchronizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasssynchronizers/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasssynchronizers/finalizers,verbs=update
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasses,verbs=get;list
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasssynchronizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasssynchronizers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasssynchronizers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasses,verbs=get;list
 // TODO - ADD RBAC FOR NEW Fields that we will manage.
 // LIST, CREATE, UPDATE, DELETE, PATCH
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;create;update;patch;delete
@@ -108,7 +108,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	if err := r.handleConfigMaps(ctx, nsc.Spec.ConfigMaps, nscs.Name, nscs.Spec.TargetNamespaceClassName); err != nil {
 		log.Error(err, "failed to update config maps")
 	}
-	if err := r.handleNetworkPolicies(ctx, nsc.Spec.NetworkPolicys, nscs.Name, nscs.Spec.TargetNamespaceClassName); err != nil {
+	if err := r.handleNetworkPolicies(ctx, nsc.Spec.NetworkPolicies, nscs.Name, nscs.Spec.TargetNamespaceClassName); err != nil {
 		log.Error(err, "failed to update network policies")
 	}
 
@@ -132,7 +132,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 func (r *NamespaceClassSynchronizerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&namespaceextenitionv1.NamespaceClassSynchronizer{}).
-		Named("namespace.extenition-namespaceclasssynchronizer").
+		Named("namespace.extension-namespaceclasssynchronizer").
 		Complete(r)
 }
 

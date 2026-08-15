@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	namespaceextenitionv1 "akuity/api/namespace.extenition/v1"
+	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
 	"akuity/internal/constants"
 )
 
@@ -35,10 +35,10 @@ type NamespaceClassReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasses,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasses/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=namespace.extenition.test.akuity,resources=namespaceclasses/finalizers,verbs=update
-// +kubebuilder:rbac:groups=namespace.extenition,resources=namespaceclasssynchronizers,verbs=get;update;list
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasses/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=namespace.extension.test.akuity,resources=namespaceclasses/finalizers,verbs=update
+// +kubebuilder:rbac:groups=namespace.extension,resources=namespaceclasssynchronizers,verbs=get;update;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -106,6 +106,6 @@ func (r *NamespaceClassReconciler) updateSynchronizerIfNeeded(
 func (r *NamespaceClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&namespaceextenitionv1.NamespaceClass{}).
-		Named("namespace.extenition-namespaceclass").
+		Named("namespace.extension-namespaceclass").
 		Complete(r)
 }

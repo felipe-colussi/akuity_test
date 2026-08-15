@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 
-	namespaceextenitionv1 "akuity/api/namespace.extenition/v1"
+	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -43,7 +43,7 @@ type NamespaceReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=namespaces/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=namespaces/finalizers,verbs=update
-// +kubebuilder:rbac:groups=namespace.extenition,resources=namespaceclasssynchronizers,verbs=get;create;update;delete
+// +kubebuilder:rbac:groups=namespace.extension,resources=namespaceclasssynchronizers,verbs=get;create;update;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

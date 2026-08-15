@@ -1,7 +1,7 @@
 # This rule is not used by the project akuity itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
-# Grants read-only access to namespace.extenition.test.akuity resources.
+# Grants read-only access to namespace.extension.test.akuity resources.
 # This role is intended for users who need visibility into these resources
 # without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
 
@@ -11,10 +11,10 @@ metadata:
   labels:
     app.kubernetes.io/name: akuity
     app.kubernetes.io/managed-by: kustomize
-  name: namespace.extenition-namespaceclasssynchronizer-viewer-role
+  name: namespace.extension-namespaceclasssynchronizer-viewer-role
 rules:
 - apiGroups:
-  - namespace.extenition.test.akuity
+  - namespace.extension.test.akuity
   resources:
   - namespaceclasssynchronizers
   verbs:
@@ -22,7 +22,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - namespace.extenition.test.akuity
+  - namespace.extension.test.akuity
   resources:
   - namespaceclasssynchronizers/status
   verbs:

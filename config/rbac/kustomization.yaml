@@ -22,10 +22,10 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the akuity itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
-- namespace.extenition_namespaceclasssynchronizer_admin_role.yaml
-- namespace.extenition_namespaceclasssynchronizer_editor_role.yaml
-- namespace.extenition_namespaceclasssynchronizer_viewer_role.yaml
-- namespace.extenition_namespaceclass_admin_role.yaml
-- namespace.extenition_namespaceclass_editor_role.yaml
-- namespace.extenition_namespaceclass_viewer_role.yaml
+- namespace.extension_namespaceclasssynchronizer_admin_role.yaml
+- namespace.extension_namespaceclasssynchronizer_editor_role.yaml
+- namespace.extension_namespaceclasssynchronizer_viewer_role.yaml
+- namespace.extension_namespaceclass_admin_role.yaml
+- namespace.extension_namespaceclass_editor_role.yaml
+- namespace.extension_namespaceclass_viewer_role.yaml
 

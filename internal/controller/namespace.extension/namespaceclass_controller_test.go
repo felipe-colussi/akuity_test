@@ -27,10 +27,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	namespaceextenitionv1 "akuity/api/namespace.extenition/v1"
+	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
 )
 
-var _ = Describe("NamespaceClassSynchronizer Controller", func() {
+var _ = Describe("NamespaceClass Controller", func() {
 	Context("When reconciling a resource", func() {
 		const (
 			resourceName      = "test-resource"
@@ -43,13 +43,13 @@ var _ = Describe("NamespaceClassSynchronizer Controller", func() {
 			Name:      resourceName,
 			Namespace: resourceNamespace,
 		}
-		namespaceclasssynchronizer := &namespaceextenitionv1.NamespaceClassSynchronizer{}
+		namespaceclass := &namespaceextenitionv1.NamespaceClass{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind NamespaceClassSynchronizer")
-			err := k8sClient.Get(ctx, typeNamespacedName, namespaceclasssynchronizer)
+			By("creating the custom resource for the Kind NamespaceClass")
+			err := k8sClient.Get(ctx, typeNamespacedName, namespaceclass)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &namespaceextenitionv1.NamespaceClassSynchronizer{
+				resource := &namespaceextenitionv1.NamespaceClass{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: resourceNamespace,
@@ -62,16 +62,16 @@ var _ = Describe("NamespaceClassSynchronizer Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &namespaceextenitionv1.NamespaceClassSynchronizer{}
+			resource := &namespaceextenitionv1.NamespaceClass{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance NamespaceClassSynchronizer")
+			By("Cleanup the specific resource instance NamespaceClass")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &NamespaceClassSynchronizerReconciler{
+			controllerReconciler := &NamespaceClassReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}

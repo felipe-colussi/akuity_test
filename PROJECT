@@ -22,17 +22,17 @@ resources:
     namespaced: true
   controller: true
   domain: test.akuity
-  group: namespace.extenition
+  group: namespace.extension
   kind: NamespaceClass
-  path: akuity/api/namespace.extenition/v1
+  path: akuity/api/namespace.extension/v1
   version: v1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
   domain: test.akuity
-  group: namespace.extenition
+  group: namespace.extension
   kind: NamespaceClassSynchronizer
-  path: akuity/api/namespace.extenition/v1
+  path: akuity/api/namespace.extension/v1
   version: v1
 version: "3"

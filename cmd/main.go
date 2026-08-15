@@ -35,9 +35,9 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	namespaceextenitionv1 "akuity/api/namespace.extenition/v1"
+	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
 	corecontroller "akuity/internal/controller/core"
-	namespaceextenitioncontroller "akuity/internal/controller/namespace.extenition"
+	namespaceextenitioncontroller "akuity/internal/controller/namespace.extension"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -183,14 +183,14 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "namespace.extenition-namespaceclass")
+		setupLog.Error(err, "Failed to create controller", "controller", "namespace.extension-namespaceclass")
 		os.Exit(1)
 	}
 	if err := (&namespaceextenitioncontroller.NamespaceClassSynchronizerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "namespace.extenition-namespaceclasssynchronizer")
+		setupLog.Error(err, "Failed to create controller", "controller", "namespace.extension-namespaceclasssynchronizer")
 		os.Exit(1)
 	}
 	if err := (&corecontroller.NamespaceReconciler{

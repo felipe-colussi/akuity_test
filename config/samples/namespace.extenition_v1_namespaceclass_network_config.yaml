@@ -1,10 +1,10 @@
-apiVersion: namespace.extenition.test.akuity/v1
+apiVersion: namespace.extension.test.akuity/v1
 kind: NamespaceClass
 metadata:
   name: isolated-profile
   namespace: akuity-system
 spec:
-  networkPolicys:
+  NetworkPolicies:
     - name: allow-http-https
       spec:
         podSelector:

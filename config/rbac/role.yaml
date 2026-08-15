@@ -42,7 +42,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - namespace.extenition
+  - namespace.extension
   resources:
   - namespaceclasssynchronizers
   verbs:
@@ -52,7 +52,7 @@ rules:
   - list
   - update
 - apiGroups:
-  - namespace.extenition.test.akuity
+  - namespace.extension.test.akuity
   resources:
   - namespaceclasses
   - namespaceclasssynchronizers
@@ -65,14 +65,14 @@ rules:
   - update
   - watch
 - apiGroups:
-  - namespace.extenition.test.akuity
+  - namespace.extension.test.akuity
   resources:
   - namespaceclasses/finalizers
   - namespaceclasssynchronizers/finalizers
   verbs:
   - update
 - apiGroups:
-  - namespace.extenition.test.akuity
+  - namespace.extension.test.akuity
   resources:
   - namespaceclasses/status
   - namespaceclasssynchronizers/status

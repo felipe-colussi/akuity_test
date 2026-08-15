@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1 contains API Schema definitions for the namespace.extenition v1 API group.
+// Package v1 contains API Schema definitions for the namespace.extension v1 API group.
 // +kubebuilder:object:generate=true
-// +groupName=namespace.extenition.test.akuity
+// +groupName=namespace.extension.test.akuity
 package v1
 
 import (
@@ -28,7 +28,7 @@ import (
 var (
 	// SchemeGroupVersion is group version used to register these objects.
 	// This name is used by applyconfiguration generators (e.g. controller-gen).
-	SchemeGroupVersion = schema.GroupVersion{Group: "namespace.extenition.test.akuity", Version: "v1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: "namespace.extension.test.akuity", Version: "v1"}
 
 	// GroupVersion is an alias for SchemeGroupVersion, for backward compatibility.
 	GroupVersion = SchemeGroupVersion

@@ -2,8 +2,8 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/namespace.extenition.test.akuity_namespaceclasses.yaml
-- bases/namespace.extenition.test.akuity_namespaceclasssynchronizers.yaml
+- bases/namespace.extension.test.akuity_namespaceclasses.yaml
+- bases/namespace.extension.test.akuity_namespaceclasssynchronizers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
