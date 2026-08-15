@@ -10,9 +10,14 @@ spec:
         - apiGroups: [""]
           resources: ["pods"]
           verbs: ["get", "list"]
-  NetworkPolicies:
+  networkPolicies:
     - name: allow-http-https
       spec:
         podSelector:
           matchLabels:
             tier: frontend_changed
+    - name: second-one
+      spec:
+        podSelector:
+          matchLabels:
+            tier: second-one

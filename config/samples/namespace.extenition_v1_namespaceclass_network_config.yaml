@@ -4,7 +4,7 @@ metadata:
   name: isolated-profile
   namespace: akuity-system
 spec:
-  NetworkPolicies:
+  networkPolicies:
     - name: allow-http-https
       spec:
         podSelector:

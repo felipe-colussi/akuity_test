@@ -19,6 +19,7 @@ package namespaceextenition
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	machinerymeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -101,14 +103,23 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 		return ctrl.Result{}, err
 	}
 
-	if err := r.handleClusterRoles(ctx, nsc.Spec.ClusterRoles, nscs.Spec.TargetNamespaceClassName); err != nil {
+	if err := r.handleClusterRoles(ctx, nsc.Spec.ClusterRoles, nscs); err != nil {
 		log.Error(err, "failed to update cluster-roles")
 	}
 
-	if err := r.handleConfigMaps(ctx, nsc.Spec.ConfigMaps, nscs.Name, nscs.Spec.TargetNamespaceClassName); err != nil {
-		log.Error(err, "failed to update config maps")
+	if err := genericNamespacedRessourceHandler(
+		ctx, r, nsc.Spec.ConfigMaps, nscs,
+		new(corev1.ConfigMapList),
+		configMapObjectFromList, configMapToObject, "ConfigMap",
+	); err != nil {
+		log.Error(err, "failed to update configMaps")
 	}
-	if err := r.handleNetworkPolicies(ctx, nsc.Spec.NetworkPolicies, nscs.Name, nscs.Spec.TargetNamespaceClassName); err != nil {
+
+	if err := genericNamespacedRessourceHandler(
+		ctx, r, nsc.Spec.NetworkPolicies, nscs,
+		new(networkingv1.NetworkPolicyList),
+		networkPolicyObjectFromList, networkPolicyToObject, "NetworkPolicy",
+	); err != nil {
 		log.Error(err, "failed to update network policies")
 	}
 
@@ -122,6 +133,14 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	}); err != nil {
 		log.Error(err, "unable to update CRD")
 		return ctrl.Result{}, err
+	}
+
+	// Update all Status on a single go
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, nscs)
+	}); err != nil {
+		log.Error(err, "unable to update status for CRD, not blocking as it wont break")
+
 	}
 
 	log.Info("returnign - Successfull update")
@@ -140,7 +159,6 @@ type GetNameInterface interface {
 	GetName() string
 }
 
-// behaviorLogic, reads 2 key strings, and check wich objects need to be deleted or "upserted"
 func objectsToKeep[T GetNameInterface](requiredObjects []T) map[string]struct{} {
 	expectedStatus := make(map[string]struct{}, len(requiredObjects))
 	for _, v := range requiredObjects {
@@ -179,11 +197,11 @@ func (r *NamespaceClassSynchronizerReconciler) upsertObject(
 
 }
 
-// TODO - NEED TO DEFINE HOW TO HANDLE ERRORS.
+// handleClusterRoles this is a global scoped object.
 func (r *NamespaceClassSynchronizerReconciler) handleClusterRoles(
 	ctx context.Context,
 	templates []namespaceextenitionv1.ClusterRoleTemplate,
-	targetNamespaceClass string,
+	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
 ) error {
 
 	clusterRoleBindingList := new(rbacv1.ClusterRoleList{})
@@ -206,7 +224,7 @@ func (r *NamespaceClassSynchronizerReconciler) handleClusterRoles(
 	}
 	for _, clusterRoleTemplate := range templates {
 		object, updateFunc := clusterRoleToObject(clusterRoleTemplate, "")
-		if err := r.upsertObject(ctx, object, updateFunc, targetNamespaceClass); err != nil {
+		if err := r.upsertObject(ctx, object, updateFunc, nscs.Spec.TargetNamespaceClassName); err != nil {
 			logf.FromContext(ctx).Error(err, "unable to update/create clusterRole")
 		}
 		logf.FromContext(ctx).Info("updated/created_cluster_role")
@@ -230,99 +248,16 @@ func clusterRoleToObject(in namespaceextenitionv1.ClusterRoleTemplate, targetNS 
 	return object, mutatingFunction
 }
 
-func (r *NamespaceClassSynchronizerReconciler) handleConfigMaps(
-	ctx context.Context,
-	templates []namespaceextenitionv1.ConfigMapTemplate,
-	targetNS string,
-	targetNamespaceClass string,
-) error {
-	log := logf.FromContext(ctx)
-
-	// Fetch Resource
-	configMapList := new(corev1.ConfigMapList)
-	if err := r.List(ctx, configMapList,
-		client.InNamespace(targetNS),
-		client.MatchingLabels{constants.AkuityNamespaceClassManagedResource: "true"},
-	); err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	// Get Objects to keep
-	keepMap := objectsToKeep(templates)
-
-	//Clean up the ones that shouldn't be kept
-	for _, existingConfigMap := range configMapList.Items {
-		if _, shouldKeep := keepMap[existingConfigMap.Name]; !shouldKeep {
-			log.Info("Deleting orphaned ConfigMap", "name", existingConfigMap.Name, "namespace", targetNS)
-			if err := r.Delete(ctx, &existingConfigMap); err != nil && !apierrors.IsNotFound(err) {
-				log.Error(err, "unable to delete ConfigMap", "name", existingConfigMap.Name)
-			}
-		}
-	}
-
-	// Update the new tempaltes.
-	for _, template := range templates {
-		object, updateFunc := configMapToObject(template, targetNS)
-		if err := r.upsertObject(ctx, object, updateFunc, targetNamespaceClass); err != nil {
-			log.Error(err, "unable to update/create ConfigMap", "name", template.GetName())
-			// return err -- TODO CHECK WHAT TO DO ON ERROR
-		}
-	}
-	return nil
-}
-
-// --- NETWORK POLICIES HANDLER ---
-func (r *NamespaceClassSynchronizerReconciler) handleNetworkPolicies(
-	ctx context.Context,
-	templates []namespaceextenitionv1.NetworkPoliciyTemplate,
-	targetNS string,
-	targetNamespaceClass string,
-) error {
-	log := logf.FromContext(ctx)
-
-	// Fetch Resource
-	netPolList := new(networkingv1.NetworkPolicyList)
-	if err := r.List(ctx, netPolList,
-		client.InNamespace(targetNS),
-		client.MatchingLabels{constants.AkuityNamespaceClassManagedResource: "true"},
-	); err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	// DELETE
-	keepMap := objectsToKeep(templates)
-	for _, existingNetPol := range netPolList.Items {
-		if _, shouldKeep := keepMap[existingNetPol.Name]; !shouldKeep {
-			log.Info("Deleting orphaned NetworkPolicy", "name", existingNetPol.Name, "namespace", targetNS)
-			if err := r.Delete(ctx, &existingNetPol); err != nil && !apierrors.IsNotFound(err) {
-				log.Error(err, "unable to delete NetworkPolicy", "name", existingNetPol.Name)
-			}
-		}
-	}
-
-	// Update and create
-	for _, template := range templates {
-		object, updateFunc := networkPolicyToObject(template, targetNS)
-		if err := r.upsertObject(ctx, object, updateFunc, targetNamespaceClass); err != nil {
-			log.Error(err, "unable to update/create NetworkPolicy", "name", template.GetName())
-			return err
-		}
-	}
-	return nil
-}
-
-func networkPolicyToObject(in namespaceextenitionv1.NetworkPoliciyTemplate, targetNS string) (client.Object, func() error) {
-	objectMeta := metav1.ObjectMeta{
-		Name:      in.GetName(),
-		Namespace: targetNS,
-	}
-	object := new(networkingv1.NetworkPolicy{ObjectMeta: objectMeta})
-
-	mutatingFunction := func() error {
-		object.Spec = in.Spec
+func configMapObjectFromList(list *corev1.ConfigMapList) []client.Object {
+	if list == nil {
 		return nil
 	}
-	return object, mutatingFunction
+	objectSlice := make([]client.Object, len(list.Items))
+	for i, _ := range list.Items {
+		objectSlice[i] = &list.Items[i]
+	}
+
+	return objectSlice
 }
 
 func configMapToObject(in namespaceextenitionv1.ConfigMapTemplate, targetNS string) (client.Object, func() error) {
@@ -336,6 +271,32 @@ func configMapToObject(in namespaceextenitionv1.ConfigMapTemplate, targetNS stri
 		object.Immutable = in.Immutable
 		object.Data = in.Data
 		object.BinaryData = in.BinaryData
+		return nil
+	}
+	return object, mutatingFunction
+}
+
+// --- NETWORK POLICIES Generic implementation ---
+func networkPolicyObjectFromList(list *networkingv1.NetworkPolicyList) []client.Object {
+	if list == nil {
+		return nil
+	}
+	objectSlice := make([]client.Object, len(list.Items))
+	for i, _ := range list.Items {
+		objectSlice[i] = &list.Items[i]
+	}
+
+	return objectSlice
+}
+func networkPolicyToObject(in namespaceextenitionv1.NetworkPoliciyTemplate, targetNS string) (client.Object, func() error) {
+	objectMeta := metav1.ObjectMeta{
+		Name:      in.GetName(),
+		Namespace: targetNS,
+	}
+	object := new(networkingv1.NetworkPolicy{ObjectMeta: objectMeta})
+
+	mutatingFunction := func() error {
+		object.Spec = in.Spec
 		return nil
 	}
 	return object, mutatingFunction
@@ -409,4 +370,82 @@ func (r *NamespaceClassSynchronizerReconciler) genericImplementation(
 	}
 
 	return nil
+}
+
+type K8sResourceManager interface {
+	client.Reader
+	client.Writer
+	upsertObject(ctx context.Context, obj client.Object, updateFunc func() error, targetNamespaceClass string) error
+}
+
+// Generic Function if we need multiple implementations.
+// Waiting for 1.27 :D
+func genericNamespacedRessourceHandler[N GetNameInterface, L client.ObjectList](
+	ctx context.Context,
+	r K8sResourceManager,
+	templates []N,
+	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	listObj L,
+	extractItems func(L) []client.Object,
+	toObjectFunc func(N, string) (client.Object, func() error),
+	resourceTypeName string, // For Logging
+) error {
+	log := logf.FromContext(ctx)
+	errorList := []string{}
+	defer appendCondition(nscs, resourceTypeName, errorList)
+
+	targetNS := nscs.Name
+	targetNamespaceClass := nscs.Spec.TargetNamespaceClassName
+
+	if err := r.List(ctx, listObj,
+		client.InNamespace(nscs.Name),
+		client.MatchingLabels{constants.AkuityNamespaceClassManagedResource: "true"},
+	); err != nil && !apierrors.IsNotFound(err) {
+		errorList = append(errorList, "unable_to_list")
+		return err
+	}
+	keepMap := objectsToKeep(templates)
+
+	for _, obj := range extractItems(listObj) {
+		if _, shouldKeep := keepMap[obj.GetName()]; !shouldKeep {
+			log.Info("Deleting orphaned resource", "type", resourceTypeName, "name", obj.GetName(), "namespace", targetNS)
+			if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
+				errorList = append(errorList, fmt.Sprintf("deleting:%s"), obj.GetName())
+				log.Error(err, "unable to delete resource", "type", resourceTypeName, "name", obj.GetName())
+			}
+		}
+	}
+
+	for _, template := range templates {
+		object, updateFunc := toObjectFunc(template, targetNS)
+		if err := r.upsertObject(ctx, object, updateFunc, targetNamespaceClass); err != nil {
+			errorList = append(errorList, fmt.Sprintf("upserting:%s", template.GetName()))
+			log.Error(err, "unable to update/create resource", "type", resourceTypeName, "name", template.GetName())
+		}
+	}
+
+	return nil
+}
+
+func appendCondition(
+	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	handlerObject string,
+	failedFields []string) {
+	availableCondition := metav1.Condition{
+		Type:               handlerObject,
+		Status:             metav1.ConditionTrue,
+		ObservedGeneration: nscs.Generation,
+		Reason:             "Successfull",
+		Message:            fmt.Sprintf("All %s components have been successfully deployed.", handlerObject),
+	}
+
+	if len(failedFields) != 0 {
+		availableCondition.Status = metav1.ConditionFalse
+		availableCondition.Reason = "Failure"
+		availableCondition.Message = fmt.Sprintf("unable to synchronize %s: %v", handlerObject, failedFields)
+	}
+
+	_ = machinerymeta.SetStatusCondition(&nscs.Status.Conditions, availableCondition)
+	return
+
 }
