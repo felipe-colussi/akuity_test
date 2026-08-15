@@ -1,0 +1,16 @@
+apiVersion: namespace.extenition.test.akuity/v1
+kind: NamespaceClass
+metadata:
+  name: isolated-profile
+  namespace: akuity-system
+spec:
+  # Exemplo utilizando o campo genérico que você não concorda:
+  anyApproach:
+    - group: networking.k8s.io
+      version: v1
+      kind: NetworkPolicy
+      name: allow-http-https
+      spec:
+        podSelector:
+          matchLabels:
+            tier: frontend

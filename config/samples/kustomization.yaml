@@ -1,0 +1,5 @@
+## Append samples of your project ##
+resources:
+- namespace.extenition_v1_namespaceclass.yaml
+- namespace.extenition_v1_namespaceclasssynchronizer.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

@@ -1,0 +1,16 @@
+apiVersion: namespace.extenition.test.akuity/v1
+kind: NamespaceClass
+metadata:
+  name: isolated-profile
+  namespace: akuity-system
+spec:
+  networkPolicys:
+    - name: allow-http-https
+      spec:
+        podSelector:
+          matchLabels:
+            tier: frontend
+  configMaps:
+    - name: frontend-config
+      data:
+        API_URL: "https://example.com"

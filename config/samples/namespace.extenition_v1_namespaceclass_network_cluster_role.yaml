@@ -1,0 +1,18 @@
+apiVersion: namespace.extenition.test.akuity/v1
+kind: NamespaceClass
+metadata:
+  name: isolated-profile
+  namespace: akuity-system
+spec:
+  clusterRoles:
+    - name: namespace-viewer
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["get", "list"]
+  networkPolicys:
+    - name: allow-http-https
+      spec:
+        podSelector:
+          matchLabels:
+            tier: frontend_changed
