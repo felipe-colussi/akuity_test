@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -102,27 +101,26 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "uneble to find CRD")
 		return ctrl.Result{}, err
 	}
+	nscsPatchHelper := client.MergeFrom(namespaceClassSynchronizer.DeepCopy())
+
 	if namespaceClassSynchronizer.Spec.TargetNamespaceClassName == targetNamespaceClass {
 		log.Info("already matched class, skipping reconciliation")
 		return ctrl.Result{}, nil
 	}
 
+	if namespaceClassSynchronizer.ObjectMeta.Labels == nil {
+		namespaceClassSynchronizer.ObjectMeta.Labels = map[string]string{}
+	}
 	namespaceClassSynchronizer.ObjectMeta.Labels[constants.AkuityNamespaceClassLabel] = targetNamespaceClass
 	namespaceClassSynchronizer.Spec.RequireUpdate = true
 	namespaceClassSynchronizer.Spec.TargetNamespaceClassName = targetNamespaceClass
 
-	if err := retry.RetryOnConflict(retry.DefaultRetry, r.updateNamespaceClassSynchronizer(ctx, namespaceClassSynchronizer)); err != nil {
+	if err := r.Patch(ctx, namespaceClassSynchronizer, nscsPatchHelper); err != nil {
 		log.Error(err, "unable to update CRD")
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 
-}
-
-func (r *NamespaceReconciler) updateNamespaceClassSynchronizer(ctx context.Context, nsClassSync *namespaceextenitionv1.NamespaceClassSynchronizer) func() error {
-	return func() error {
-		return r.Update(ctx, nsClassSync)
-	}
 }
 
 func (r *NamespaceReconciler) createNamespaceClassSynchronizer(ctx context.Context, namespace *corev1.Namespace, targetNamespaceClass string) error {

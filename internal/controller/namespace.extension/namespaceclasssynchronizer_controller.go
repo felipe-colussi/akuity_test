@@ -84,6 +84,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 		log.Info("skippeing reconciliation, no update needed")
 		return ctrl.Result{}, nil
 	}
+	nscsPatchHelper := client.MergeFrom(nscs.DeepCopy())
 
 	nsc := new(namespaceextenitionv1.NamespaceClass{})
 	nscObjectKey := client.ObjectKey{
@@ -128,19 +129,14 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	}
 
 	nscs.Spec.RequireUpdate = false
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return r.Update(ctx, nscs)
-	}); err != nil {
+	if err := r.Patch(ctx, nscs, nscsPatchHelper); err != nil {
 		log.Error(err, "unable to update CRD")
 		return ctrl.Result{}, err
 	}
 
 	// Update all Status on a single go
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, nscs)
-	}); err != nil {
+	if err := r.Status().Patch(ctx, nscs, nscsPatchHelper); err != nil {
 		log.Error(err, "unable to update status for CRD, not blocking as it wont break")
-
 	}
 
 	log.Info("returnign - Successfull update")

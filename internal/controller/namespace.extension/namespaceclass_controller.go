@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -77,8 +76,10 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	for _, nscSyncronizer := range nscSynchronizerList.Items {
-		err := r.updateSynchronizer(ctx, nscSyncronizer)
+	for _, nscs := range nscSynchronizerList.Items {
+		nscsPatchHelper := client.MergeFrom(nscs.DeepCopy())
+		nscs.Spec.RequireUpdate = true
+		err := r.Patch(ctx, new(nscs), nscsPatchHelper)
 		if err != nil {
 			log.Error(err, "unable to update syncronizer for specific crd")
 			// TODO - Add extra though on how to solve when this happens for a single CRD.
@@ -87,19 +88,6 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func (r *NamespaceClassReconciler) updateSynchronizer(
-	ctx context.Context,
-	nscSyncronizer namespaceextenitionv1.NamespaceClassSynchronizer,
-) error {
-
-	nscSyncronizer.Spec.RequireUpdate = true
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return r.Update(ctx, &nscSyncronizer)
-	})
-
-	return err
 }
 
 // SetupWithManager sets up the controller with the Manager.
