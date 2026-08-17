@@ -25,7 +25,3 @@ rules:
   - namespaceclasses/status
   verbs:
   - get
-
-// namespace.extension_namespaceclasssynchronizer_admin_role.yaml
-// namespace.extenition_namespaceclasssynchronizer_admin_role
-// namespace.extenition_namespaceclass_admin_role

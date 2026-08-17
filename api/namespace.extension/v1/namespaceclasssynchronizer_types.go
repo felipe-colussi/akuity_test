@@ -57,6 +57,7 @@ type NamespaceClassSynchronizerStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=nscs
 
 // NamespaceClassSynchronizer is the Schema for the namespaceclasssynchronizers API
 type NamespaceClassSynchronizer struct {

@@ -11,6 +11,8 @@ spec:
     kind: NamespaceClass
     listKind: NamespaceClassList
     plural: namespaceclasses
+    shortNames:
+    - nsc
     singular: namespaceclass
   scope: Namespaced
   versions:
