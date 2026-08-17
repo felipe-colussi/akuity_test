@@ -1,0 +1,10 @@
+apiVersion: namespace.extension.test.akuity/v1
+kind: NamespaceClass
+metadata:
+  name: second-profile
+  namespace: akuity-system
+spec:
+  configMaps:
+    - name: second-profile
+      data:
+        foo: "bar"

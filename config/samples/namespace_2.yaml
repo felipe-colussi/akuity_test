@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: test1
+    namespaceclass.akuity.io/name: "second-profile"
+  name: test1
