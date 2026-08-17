@@ -4,6 +4,11 @@ metadata:
   labels:
     app.kubernetes.io/name: akuity
     app.kubernetes.io/managed-by: kustomize
-  name: namespaceclasssynchronizer-sample
+  name: namespace-that-is-managing-sample
+  namespace: akuity-system
 spec:
-  # TODO(user): Add fields here
+Spec:
+  require_update:          true
+  target_namespace_class:  isolated-profile
+
+-- DO NOT APPLY THIS ONE. THIS WILL BE AUTO MANAGED BY THE CONTROLLER.

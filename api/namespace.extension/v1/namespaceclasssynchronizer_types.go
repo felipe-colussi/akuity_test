@@ -27,9 +27,9 @@ import (
 // NamespaceClassSynchronizerSpec defines the desired state of NamespaceClassSynchronizer
 type NamespaceClassSynchronizerSpec struct {
 	// +required
-	TargetNamespaceClassName string `json:"TargetNamespaceClass"`
+	TargetNamespaceClassName string `json:"targetNamespaceClass"`
 	// +required
-	RequireUpdate bool `json:"RequireUpdate"`
+	RequireUpdate bool `json:"requireUpdate"`
 }
 
 // NamespaceClassSynchronizerStatus defines the observed state of NamespaceClassSynchronizer.

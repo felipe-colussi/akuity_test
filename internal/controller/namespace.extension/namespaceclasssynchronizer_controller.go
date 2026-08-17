@@ -284,7 +284,7 @@ func networkPolicyObjectFromList(list *networkingv1.NetworkPolicyList) []client.
 
 	return objectSlice
 }
-func networkPolicyToObject(in namespaceextenitionv1.NetworkPoliciyTemplate, targetNS string) (client.Object, func() error) {
+func networkPolicyToObject(in namespaceextenitionv1.NetworkPolicyTemplate, targetNS string) (client.Object, func() error) {
 	objectMeta := metav1.ObjectMeta{
 		Name:      in.GetName(),
 		Namespace: targetNS,
@@ -312,7 +312,12 @@ func (r *NamespaceClassSynchronizerReconciler) genericImplementation(
 ) error {
 	//
 	log := logf.FromContext(ctx)
-	for _, resource := range templates {
+	errorList := []string{}
+	defer appendCondition(nscs, "resourceTypeName", errorList)
+
+	for i, resource := range templates {
+		i := i
+		resource := resource
 		// Local copy of loop variable for safety inside closure
 		targetResouce := resource
 
@@ -351,16 +356,17 @@ func (r *NamespaceClassSynchronizerReconciler) genericImplementation(
 			unstructured.SetNestedMap(obj.Object, rawMetadata, "metadata")
 			obj.SetName(targetResouce.Name)
 			obj.SetNamespace(nscs.Name)
-			/*
-				if err := controllerutil.SetControllerReference(nscs, obj, r.Scheme); err != nil {
-					return err
-			}*/
+			/* IF WE WANT TO GO THIS WAY: WE need to define a RESOURCE ON THE NAMESPACE (Probably a copy of NSCS or another one to serve as "parent")
+			if err := controllerutil.SetControllerReference(nscs, obj, r.Scheme); err != nil {
+					errorList = append(errorList, fmt.Sprintf("unsuportedObject:pos_%d", i))
+					log.Error(err, fmt.Sprintf("unsuportedObject on position: %d", i))
+			} */
 			return nil
 		}
 
 		if err := r.upsertObject(ctx, client.Object(obj), objectUpdateFunc, nscs.Spec.TargetNamespaceClassName); err != nil {
-
-			log.Info("unable to upsert_object")
+			errorList = append(errorList, fmt.Sprintf("upserting:pos_%d", i))
+			log.Error(err, fmt.Sprintf("unable to upsert object on position: %d", i))
 			return err
 		}
 	}
@@ -406,7 +412,7 @@ func genericNamespacedRessourceHandler[N GetNameInterface, L client.ObjectList](
 		if _, shouldKeep := keepMap[obj.GetName()]; !shouldKeep {
 			log.Info("Deleting orphaned resource", "type", resourceTypeName, "name", obj.GetName(), "namespace", targetNS)
 			if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
-				errorList = append(errorList, fmt.Sprintf("deleting:%s"), obj.GetName())
+				errorList = append(errorList, fmt.Sprintf("deleting: %s", obj.GetName()))
 				log.Error(err, "unable to delete resource", "type", resourceTypeName, "name", obj.GetName())
 			}
 		}

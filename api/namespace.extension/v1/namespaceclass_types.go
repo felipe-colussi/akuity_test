@@ -29,7 +29,7 @@ import (
 // NamespaceClassSpec defines the desired state of NamespaceClass
 type NamespaceClassSpec struct {
 	// +optional
-	NetworkPolicies []NetworkPoliciyTemplate `json:"networkPolicies,omitempty"`
+	NetworkPolicies []NetworkPolicyTemplate `json:"networkPolicies,omitempty"`
 	// +optional
 	ConfigMaps []ConfigMapTemplate `json:"configMaps,omitempty"`
 	// +optional
@@ -61,7 +61,7 @@ type TargetResource struct {
 	Spec runtime.RawExtension `json:"spec"`
 }
 
-type NetworkPoliciyTemplate struct {
+type NetworkPolicyTemplate struct {
 	// +optional
 	Name string `json:"name"`
 	// spec represents the specification of the desired behavior for this NetworkPolicy.
@@ -69,7 +69,7 @@ type NetworkPoliciyTemplate struct {
 	Spec networkingv1.NetworkPolicySpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 }
 
-func (n NetworkPoliciyTemplate) GetName() string {
+func (n NetworkPolicyTemplate) GetName() string {
 	return n.Name
 }
 

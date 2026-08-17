@@ -77,9 +77,8 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	for _, nscs := range nscSynchronizerList.Items {
-		nscsPatchHelper := client.MergeFrom(nscs.DeepCopy())
 		nscs.Spec.RequireUpdate = true
-		err := r.Patch(ctx, new(nscs), nscsPatchHelper)
+		err := r.Update(ctx, new(nscs))
 		if err != nil {
 			log.Error(err, "unable to update syncronizer for specific crd")
 			// TODO - Add extra though on how to solve when this happens for a single CRD.

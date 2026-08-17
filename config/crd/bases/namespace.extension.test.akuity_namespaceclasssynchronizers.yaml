@@ -40,13 +40,13 @@ spec:
           spec:
             description: spec defines the desired state of NamespaceClassSynchronizer
             properties:
-              RequireUpdate:
+              requireUpdate:
                 type: boolean
-              TargetNamespaceClass:
+              targetNamespaceClass:
                 type: string
             required:
-            - RequireUpdate
-            - TargetNamespaceClass
+            - requireUpdate
+            - targetNamespaceClass
             type: object
           status:
             description: status defines the observed state of NamespaceClassSynchronizer

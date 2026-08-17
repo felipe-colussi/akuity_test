@@ -93,12 +93,12 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		// If it does not exist we just create it. NO need to do the next steps.
 		if apierrors.IsNotFound(err) {
 			if creatingError := r.createNamespaceClassSynchronizer(ctx, ns, targetNamespaceClass); creatingError != nil {
-				log.Error(err, "unable to create CRD")
-				return ctrl.Result{}, err
+				log.Error(creatingError, "unable to create nscs")
+				return ctrl.Result{}, creatingError
 			}
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "uneble to find CRD")
+		log.Error(err, "unable to find nscs") // Let retry
 		return ctrl.Result{}, err
 	}
 	nscsPatchHelper := client.MergeFrom(namespaceClassSynchronizer.DeepCopy())
