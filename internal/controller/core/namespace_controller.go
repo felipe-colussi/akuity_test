@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 
-	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
+	nscextension "akuity/api/namespace.extension/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -88,7 +88,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		Name:      ns.GetName(),
 	}
 
-	namespaceClassSynchronizer := new(namespaceextenitionv1.NamespaceClassSynchronizer{})
+	namespaceClassSynchronizer := new(nscextension.NamespaceClassSynchronizer{})
 	if err := r.Get(ctx, NamespaceClassSynchronizerObjectKey, namespaceClassSynchronizer); err != nil {
 		// If it does not exist we just create it. NO need to do the next steps.
 		if apierrors.IsNotFound(err) {
@@ -133,9 +133,9 @@ func (r *NamespaceReconciler) createNamespaceClassSynchronizer(ctx context.Conte
 		Labels:    map[string]string{constants.AkuityNamespaceClassLabel: targetNamespaceClass},
 	}
 
-	nsClassSynchronizer := namespaceextenitionv1.NamespaceClassSynchronizer{
+	nsClassSynchronizer := nscextension.NamespaceClassSynchronizer{
 		ObjectMeta: metaObject,
-		Spec: namespaceextenitionv1.NamespaceClassSynchronizerSpec{
+		Spec: nscextension.NamespaceClassSynchronizerSpec{
 			TargetNamespaceClassName: targetNamespaceClass,
 			RequireUpdate:            true,
 		},
@@ -151,7 +151,7 @@ func (r *NamespaceReconciler) deleteNamespaceClassSynchronizer(ctx context.Conte
 		Name:      namespaceName,
 		Namespace: constants.ControllerNamespace, // This ones live on the controller namespace.
 	}
-	nsClassSynchronizer := namespaceextenitionv1.NamespaceClassSynchronizer{
+	nsClassSynchronizer := nscextension.NamespaceClassSynchronizer{
 		ObjectMeta: metaObject,
 	}
 

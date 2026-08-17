@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
+	nscextension "akuity/api/namespace.extension/v1"
 	"akuity/internal/constants"
 )
 
@@ -57,13 +57,13 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// B) TODO - Determine what happens if this is deleted.
 
 	log.Info("runing Reconcile", "request", req)
-	nsc := new(namespaceextenitionv1.NamespaceClass{})
+	nsc := new(nscextension.NamespaceClass{})
 	if err := r.Get(ctx, req.NamespacedName, nsc); err != nil {
 		log.Error(err, "unabled to get namespaceClass")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	nscSynchronizerList := new(namespaceextenitionv1.NamespaceClassSynchronizerList{})
+	nscSynchronizerList := new(nscextension.NamespaceClassSynchronizerList{})
 
 	if err := r.List(ctx,
 		nscSynchronizerList,
@@ -92,7 +92,7 @@ func (r *NamespaceClassReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&namespaceextenitionv1.NamespaceClass{}).
+		For(&nscextension.NamespaceClass{}).
 		Named("namespace.extension-namespaceclass").
 		Complete(r)
 }

@@ -33,7 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
+	nscextension "akuity/api/namespace.extension/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -60,7 +60,7 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	var err error
-	err = namespaceextenitionv1.AddToScheme(scheme.Scheme)
+	err = nscextension.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

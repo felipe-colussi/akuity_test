@@ -35,8 +35,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
+	nscextension "akuity/api/namespace.extension/v1"
 	"akuity/internal/constants"
+	nschelper "akuity/internal/helpers/namespaceclass"
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -73,7 +74,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	log := logf.FromContext(ctx)
 
 	log.Info("runing Reconcile for NamespaceClassSynchronizerReconciler", "request", req)
-	nscs := new(namespaceextenitionv1.NamespaceClassSynchronizer{})
+	nscs := new(nscextension.NamespaceClassSynchronizer{})
 	if err := r.Get(ctx, req.NamespacedName, nscs); err != nil {
 		log.Error(err, "unable to find NamespaceClassSynchronizer")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -86,7 +87,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	}
 	nscsPatchHelper := client.MergeFrom(nscs.DeepCopy())
 
-	nsc := new(namespaceextenitionv1.NamespaceClass{})
+	nsc := new(nscextension.NamespaceClass{})
 	nscObjectKey := client.ObjectKey{
 		Namespace: constants.ControllerNamespace,
 		Name:      nscs.Spec.TargetNamespaceClassName,
@@ -115,17 +116,17 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	}
 
 	if err := genericNamespacedRessourceHandler(
-		ctx, r, nsc.Spec.ConfigMaps, nscs,
+		ctx, "ConfigMap", r, nsc.Spec.ConfigMaps, nscs,
 		new(corev1.ConfigMapList),
-		configMapObjectFromList, configMapToObject, "ConfigMap",
+		nschelper.ConfigMapObjectFromList, nschelper.ConfigMapTemplateToObject,
 	); err != nil {
 		log.Error(err, "failed to update configMaps")
 	}
 
 	if err := genericNamespacedRessourceHandler(
-		ctx, r, nsc.Spec.NetworkPolicies, nscs,
+		ctx, "NetworkPolicy", r, nsc.Spec.NetworkPolicies, nscs,
 		new(networkingv1.NetworkPolicyList),
-		networkPolicyObjectFromList, networkPolicyToObject, "NetworkPolicy",
+		nschelper.NetworkPolicyObjectFromList, nschelper.NetworkPolicyTemplateToObject,
 	); err != nil {
 		log.Error(err, "failed to update network policies")
 	}
@@ -152,7 +153,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 // SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceClassSynchronizerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&namespaceextenitionv1.NamespaceClassSynchronizer{}).
+		For(&nscextension.NamespaceClassSynchronizer{}).
 		Named("namespace.extension-namespaceclasssynchronizer").
 		Complete(r)
 }
@@ -202,8 +203,8 @@ func (r *NamespaceClassSynchronizerReconciler) upsertObject(
 // handleClusterRoles this is a global scoped object.
 func (r *NamespaceClassSynchronizerReconciler) handleClusterRoles(
 	ctx context.Context,
-	templates []namespaceextenitionv1.ClusterRoleTemplate,
-	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	templates []nscextension.ClusterRoleTemplate,
+	nscs *nscextension.NamespaceClassSynchronizer,
 ) error {
 
 	clusterRoleBindingList := new(rbacv1.ClusterRoleList{})
@@ -235,7 +236,7 @@ func (r *NamespaceClassSynchronizerReconciler) handleClusterRoles(
 	return nil
 }
 
-func clusterRoleToObject(in namespaceextenitionv1.ClusterRoleTemplate, targetNS string) (client.Object, func() error) {
+func clusterRoleToObject(in nscextension.ClusterRoleTemplate, targetNS string) (client.Object, func() error) {
 	objectMeta := metav1.ObjectMeta{
 		Name:      in.GetName(),
 		Namespace: targetNS,
@@ -250,60 +251,6 @@ func clusterRoleToObject(in namespaceextenitionv1.ClusterRoleTemplate, targetNS 
 	return object, mutatingFunction
 }
 
-func configMapObjectFromList(list *corev1.ConfigMapList) []client.Object {
-	if list == nil {
-		return nil
-	}
-	objectSlice := make([]client.Object, len(list.Items))
-	for i, _ := range list.Items {
-		objectSlice[i] = &list.Items[i]
-	}
-
-	return objectSlice
-}
-
-func configMapToObject(in namespaceextenitionv1.ConfigMapTemplate, targetNS string) (client.Object, func() error) {
-	objectMeta := metav1.ObjectMeta{
-		Name:      in.GetName(),
-		Namespace: targetNS,
-	}
-	object := new(corev1.ConfigMap{ObjectMeta: objectMeta})
-
-	mutatingFunction := func() error {
-		object.Immutable = in.Immutable
-		object.Data = in.Data
-		object.BinaryData = in.BinaryData
-		return nil
-	}
-	return object, mutatingFunction
-}
-
-// --- NETWORK POLICIES Generic implementation ---
-func networkPolicyObjectFromList(list *networkingv1.NetworkPolicyList) []client.Object {
-	if list == nil {
-		return nil
-	}
-	objectSlice := make([]client.Object, len(list.Items))
-	for i, _ := range list.Items {
-		objectSlice[i] = &list.Items[i]
-	}
-
-	return objectSlice
-}
-func networkPolicyToObject(in namespaceextenitionv1.NetworkPolicyTemplate, targetNS string) (client.Object, func() error) {
-	objectMeta := metav1.ObjectMeta{
-		Name:      in.GetName(),
-		Namespace: targetNS,
-	}
-	object := new(networkingv1.NetworkPolicy{ObjectMeta: objectMeta})
-
-	mutatingFunction := func() error {
-		object.Spec = in.Spec
-		return nil
-	}
-	return object, mutatingFunction
-}
-
 // genericImplementation that I DO NOT LIKE.
 // on the current status this will:
 // A) Not delete on reconcile:  I would move (or duplicate the CRD to namespace) And have GC to remove it.
@@ -313,8 +260,8 @@ func networkPolicyToObject(in namespaceextenitionv1.NetworkPolicyTemplate, targe
 // C) Limit to spec / metadata so A think like a ConfigMap will not be created. (I could do a single any{})
 func (r *NamespaceClassSynchronizerReconciler) genericImplementation(
 	ctx context.Context,
-	templates []namespaceextenitionv1.TargetResource,
-	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	templates []nscextension.TargetResource,
+	nscs *nscextension.NamespaceClassSynchronizer,
 ) error {
 	//
 	log := logf.FromContext(ctx)
@@ -390,13 +337,13 @@ type K8sResourceManager interface {
 // Waiting for 1.27 :D
 func genericNamespacedRessourceHandler[N GetNameInterface, L client.ObjectList](
 	ctx context.Context,
+	resourceTypeName string, // For Logging
 	r K8sResourceManager,
 	templates []N,
-	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	nscs *nscextension.NamespaceClassSynchronizer,
 	listObj L,
 	extractItems func(L) []client.Object,
 	toObjectFunc func(N, string) (client.Object, func() error),
-	resourceTypeName string, // For Logging
 ) error {
 	log := logf.FromContext(ctx)
 	errorList := []string{}
@@ -436,7 +383,7 @@ func genericNamespacedRessourceHandler[N GetNameInterface, L client.ObjectList](
 }
 
 func appendCondition(
-	nscs *namespaceextenitionv1.NamespaceClassSynchronizer,
+	nscs *nscextension.NamespaceClassSynchronizer,
 	handlerObject string,
 	failedFields []string) {
 	availableCondition := metav1.Condition{
@@ -454,11 +401,10 @@ func appendCondition(
 	}
 
 	_ = machinerymeta.SetStatusCondition(&nscs.Status.Conditions, availableCondition)
-	return
 
 }
 
-func appendConditionUnableToGetNamespaceClass(nscs *namespaceextenitionv1.NamespaceClassSynchronizer) {
+func appendConditionUnableToGetNamespaceClass(nscs *nscextension.NamespaceClassSynchronizer) {
 	availableCondition := metav1.Condition{
 		Type:               "NameSpaceClass",
 		Status:             metav1.ConditionFalse,

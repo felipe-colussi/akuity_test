@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	namespaceextenitionv1 "akuity/api/namespace.extension/v1"
+	nscextension "akuity/api/namespace.extension/v1"
 )
 
 var _ = Describe("NamespaceClass Controller", func() {
@@ -43,13 +43,13 @@ var _ = Describe("NamespaceClass Controller", func() {
 			Name:      resourceName,
 			Namespace: resourceNamespace,
 		}
-		namespaceclass := &namespaceextenitionv1.NamespaceClass{}
+		namespaceclass := &nscextension.NamespaceClass{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind NamespaceClass")
 			err := k8sClient.Get(ctx, typeNamespacedName, namespaceclass)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &namespaceextenitionv1.NamespaceClass{
+				resource := &nscextension.NamespaceClass{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: resourceNamespace,
@@ -62,7 +62,7 @@ var _ = Describe("NamespaceClass Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &namespaceextenitionv1.NamespaceClass{}
+			resource := &nscextension.NamespaceClass{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
