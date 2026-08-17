@@ -96,12 +96,18 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	// Or store it on its spec.
 	if err := r.Get(ctx, nscObjectKey, nsc); err != nil {
 		if apierrors.IsNotFound(err) {
-			// TODO - Define behavior. ATM just stoping execution
-			// may consider reconcile and delete all objects. Just not returning should do that
-			log.Info("Skipping as no namespaceClass was found")
-			return ctrl.Result{}, nil
+			nscs.Spec.RequireUpdate = false
+			if err := r.Patch(ctx, nscs, nscsPatchHelper); err != nil {
+				log.Error(err, "unable to update CRD")
+				return ctrl.Result{}, err
+			}
+			appendConditionUnableToGetNamespaceClass(nscs)
+			// Update all Status on a single go
+			if err := r.Status().Patch(ctx, nscs, nscsPatchHelper); err != nil {
+				log.Error(err, "unable to update status for CRD, not blocking as it wont break")
+			}
+
 		}
-		return ctrl.Result{}, err
 	}
 
 	if err := r.handleClusterRoles(ctx, nsc.Spec.ClusterRoles, nscs); err != nil {
@@ -450,4 +456,16 @@ func appendCondition(
 	_ = machinerymeta.SetStatusCondition(&nscs.Status.Conditions, availableCondition)
 	return
 
+}
+
+func appendConditionUnableToGetNamespaceClass(nscs *namespaceextenitionv1.NamespaceClassSynchronizer) {
+	availableCondition := metav1.Condition{
+		Type:               "NameSpaceClass",
+		Status:             metav1.ConditionFalse,
+		ObservedGeneration: nscs.Generation,
+		Reason:             "Aborted",
+		Message:            fmt.Sprintf("unable to fetch nsc: %s", nscs.Spec.TargetNamespaceClassName),
+	}
+
+	_ = machinerymeta.SetStatusCondition(&nscs.Status.Conditions, availableCondition)
 }

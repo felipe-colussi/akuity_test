@@ -11,6 +11,8 @@ spec:
     kind: NamespaceClassSynchronizer
     listKind: NamespaceClassSynchronizerList
     plural: namespaceclasssynchronizers
+    shortNames:
+    - nscs
     singular: namespaceclasssynchronizer
   scope: Namespaced
   versions:
