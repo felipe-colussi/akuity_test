@@ -197,3 +197,12 @@ NamespaceClassStatus:
             -- Fetch All Tagged Resources
             -- Fetch NamespaceClass
             -- Reconcile. 
+
+
+# Test cases: 
+A) Namespace1 (Tagging NSC) -> NSC CLASS DOES NOT EXIST 
+B) NSC1 -> Should deploy.
+C) CRD2 -> Should Deploy and overwrite.
+D) Namespace2 Using CRD -> Should deploy
+E) Deploy 2nd NSC.  -> No change.
+F) Replace 2nd namespace to use it.

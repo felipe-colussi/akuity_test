@@ -75,13 +75,15 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 
 	log.Info("runing Reconcile for NamespaceClassSynchronizerReconciler", "request", req)
 	nscs := new(nscextension.NamespaceClassSynchronizer{})
-	if err := r.Get(ctx, req.NamespacedName, nscs); err != nil {
+	err := r.Get(ctx, req.NamespacedName, nscs)
+	nscsDeleted := apierrors.IsNotFound(err)
+	if err != nil && !nscsDeleted {
 		log.Error(err, "unable to find NamespaceClassSynchronizer")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// No need for update just return
-	if !nscs.Spec.RequireUpdate {
+	if !nscs.Spec.RequireUpdate && !nscsDeleted {
 		log.Info("skippeing reconciliation, no update needed")
 		return ctrl.Result{}, nil
 	}
@@ -95,7 +97,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	// TODO - CHECK IF WE NEED TO SUPPORT THE NSC On any namespace. If so this needs to change.
 	// We probably need to fetch the reference to the namesapce and save on the syncronizer.
 	// Or store it on its spec.
-	if err := r.Get(ctx, nscObjectKey, nsc); err != nil {
+	if err := r.Get(ctx, nscObjectKey, nsc); err != nil && !nscsDeleted {
 		if apierrors.IsNotFound(err) {
 			nscs.Spec.RequireUpdate = false
 			if err := r.Patch(ctx, nscs, nscsPatchHelper); err != nil {
@@ -118,7 +120,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	if err := genericNamespacedRessourceHandler(
 		ctx, "ConfigMap", r, nsc.Spec.ConfigMaps, nscs,
 		new(corev1.ConfigMapList),
-		nschelper.ConfigMapObjectFromList, nschelper.ConfigMapTemplateToObject,
+		nschelper.ConfigMapObjectFromList, nschelper.ConfigMapTemplateToObject, nscsDeleted,
 	); err != nil {
 		log.Error(err, "failed to update configMaps")
 	}
@@ -126,7 +128,7 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 	if err := genericNamespacedRessourceHandler(
 		ctx, "NetworkPolicy", r, nsc.Spec.NetworkPolicies, nscs,
 		new(networkingv1.NetworkPolicyList),
-		nschelper.NetworkPolicyObjectFromList, nschelper.NetworkPolicyTemplateToObject,
+		nschelper.NetworkPolicyObjectFromList, nschelper.NetworkPolicyTemplateToObject, nscsDeleted,
 	); err != nil {
 		log.Error(err, "failed to update network policies")
 	}
@@ -135,6 +137,9 @@ func (r *NamespaceClassSynchronizerReconciler) Reconcile(ctx context.Context, re
 		log.Error(err, "failed to implement generic object")
 	}
 
+	if nscsDeleted { // For clean-up no need to update
+		return ctrl.Result{}, nil
+	}
 	nscs.Spec.RequireUpdate = false
 	if err := r.Patch(ctx, nscs, nscsPatchHelper); err != nil {
 		log.Error(err, "unable to update CRD")
@@ -155,6 +160,9 @@ func (r *NamespaceClassSynchronizerReconciler) SetupWithManager(mgr ctrl.Manager
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nscextension.NamespaceClassSynchronizer{}).
 		Named("namespace.extension-namespaceclasssynchronizer").
+		/*WithOptions(controller.Options{
+			MaxConcurrentReconciles: 2,
+		}).*/
 		Complete(r)
 }
 
@@ -344,10 +352,16 @@ func genericNamespacedRessourceHandler[N GetNameInterface, L client.ObjectList](
 	listObj L,
 	extractItems func(L) []client.Object,
 	toObjectFunc func(N, string) (client.Object, func() error),
+	nscsDeleted bool,
 ) error {
 	log := logf.FromContext(ctx)
 	errorList := []string{}
-	defer appendCondition(nscs, resourceTypeName, errorList)
+	defer func() {
+		if !nscsDeleted {
+			appendCondition(nscs, resourceTypeName, errorList)
+		}
+		return
+	}()
 
 	targetNS := nscs.Name
 	targetNamespaceClass := nscs.Spec.TargetNamespaceClassName
